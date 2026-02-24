@@ -1,0 +1,10 @@
+//EMIBTCH  JOB (B001),'TV EMI RUN',CLASS=B,MSGCLASS=X,NOTIFY=&SYSUID
+//*-------------------------------------------------------*
+//*   EXECUTE EMI COLLECTION PROGRAM                      *
+//*-------------------------------------------------------*
+//RUNSTEP  EXEC PGM=EMIPROC99
+//LOADLIB  DD  DISP=SHR,DSN=A019.TV.LOADLIB
+//INPUTEMI DD  DISP=SHR,DSN=A019.TV.DATA.EMIIN
+//ACCTKSDS DD  DISP=SHR,DSN=A019.TV.DATA.ACCKSDS
+//OUTMSG   DD  SYSOUT=*
+//PRINTLOG DD  SYSOUT=*
