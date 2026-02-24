@@ -1,0 +1,29 @@
+//VENID01A JOB (HACK),'RUN PROC',CLASS=A,MSGCLASS=X,NOTIFY=&SYSUID   
+//JOBLIB   DD DSN=A019.AAKASH.JCL,DISP=SHR                      
+//STEP0  EXEC PGM=IDCAMS                                             
+//SYSPRINT DD  SYSOUT=*                                              
+//SYSIN    DD  *                                                     
+   DELETE A019.AAKASH.KSDS CLUSTER                                 
+/*                                                                   
+//STEP1  EXEC PGM=IDCAMS                                             
+//SYSPRINT DD  SYSOUT=*                                              
+//SYSIN    DD  *                                                     
+    DEFINE CLUSTER (NAME(A019.AAKASH.KSDS)  -                      
+    INDEXED                                 -                        
+    KEYS(10,0)                               -                        
+    RECSZ(80,80)                            -                        
+    TRACKS(1,1)                             -                        
+    CISZ(4096)                              -                        
+    VOLUMES(USR001)   -                                              
+    FREESPACE(3 3))                         -                        
+    DATA (NAME(A019.AAKASH.KSDS.DATA))-                    
+    INDEX (NAME(A019.AAKASH.KSDS.INDEX))                   
+/*                                                           
+//STEP2  EXEC PGM=IDCAMS                                     
+//SYSPRINT DD  SYSOUT=*                                      
+//IN       DD DSN=A019.FILE03.PROJECT.DATA,DISP=SHR       
+//OUT      DD DSN=A019.AAKASH.KSDS,DISP=SHR                
+//SYSIN    DD  *                                             
+   REPRO INFILE(IN) -                                        
+   OUTFILE(OUT)                                              
+/*  
