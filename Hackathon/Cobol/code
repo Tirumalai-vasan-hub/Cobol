@@ -1,0 +1,128 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. EMIPROC99.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+
+           SELECT INFILE
+               ASSIGN TO EMIDATA
+               ORGANIZATION IS SEQUENTIAL
+               FILE STATUS IS FS-IN.
+
+           SELECT ACCFILE
+               ASSIGN TO ACCTKSDS
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS RANDOM
+               RECORD KEY IS ACCT-ID
+               FILE STATUS IS FS-AC.
+
+       DATA DIVISION.
+       FILE SECTION.
+
+       FD  INFILE.
+       01  IN-REC.
+           05  IN-ACC-ID        PIC X(10).
+           05  IN-EMI-AMT       PIC 9(7).
+
+       FD  ACCFILE.
+       01  ACCT-REC.
+           05  ACCT-ID          PIC X(10).
+           05  ACCT-HOLDER      PIC X(30).
+           05  ACCT-CAT         PIC X(1).
+           05  ACCT-BALANCE     PIC 9(7).
+           05  ACCT-FLAG        PIC X(1).
+
+       WORKING-STORAGE SECTION.
+
+       01  FILE-STATUS-AREA.
+           05  FS-IN            PIC XX.
+           05  FS-AC            PIC XX.
+
+       01  CONTROL-FLAGS.
+           05  END-SWITCH       PIC X VALUE 'N'.
+
+       01  CONSTANT-VALUES.
+           05  PEN-AMT          PIC 9(5) VALUE 300.
+
+       01  STAT-AREA.
+           05  CNT-TOTAL        PIC 9(6) VALUE 0.
+           05  CNT-OK           PIC 9(6) VALUE 0.
+           05  CNT-ERR          PIC 9(6) VALUE 0.
+           05  SUM-EMI          PIC 9(9) VALUE 0.
+           05  SUM-PEN          PIC 9(9) VALUE 0.
+
+       PROCEDURE DIVISION.
+
+       ENTRY-POINT.
+           PERFORM INIT-FILES
+           PERFORM PROCESS-FILE
+               UNTIL END-SWITCH = 'Y'
+           PERFORM SHOW-RESULT
+           PERFORM CLOSE-FILES
+           STOP RUN.
+
+       INIT-FILES.
+           OPEN INPUT INFILE
+                I-O   ACCFILE.
+
+       PROCESS-FILE.
+           READ INFILE
+               AT END
+                   MOVE 'Y' TO END-SWITCH
+               NOT AT END
+                   ADD 1 TO CNT-TOTAL
+                   PERFORM HANDLE-RECORD
+           END-READ.
+
+       HANDLE-RECORD.
+           MOVE IN-ACC-ID TO ACCT-ID
+
+           READ ACCFILE
+               INVALID KEY
+                   PERFORM UPDATE-FAIL
+               NOT INVALID KEY
+                   PERFORM CHECK-ACCOUNT
+           END-READ.
+
+       CHECK-ACCOUNT.
+           EVALUATE TRUE
+               WHEN ACCT-FLAG NOT = 'A'
+                   PERFORM UPDATE-FAIL
+
+               WHEN ACCT-BALANCE >= IN-EMI-AMT
+                   PERFORM APPLY-EMI
+
+               WHEN OTHER
+                   PERFORM APPLY-PENALTY
+           END-EVALUATE.
+
+       APPLY-EMI.
+           COMPUTE ACCT-BALANCE =
+                   ACCT-BALANCE - IN-EMI-AMT
+           ADD IN-EMI-AMT TO SUM-EMI
+           ADD 1 TO CNT-OK
+           REWRITE ACCT-REC.
+
+       APPLY-PENALTY.
+           COMPUTE ACCT-BALANCE =
+                   ACCT-BALANCE - PEN-AMT
+           ADD PEN-AMT TO SUM-PEN
+           PERFORM UPDATE-FAIL
+           REWRITE ACCT-REC.
+
+       UPDATE-FAIL.
+           ADD 1 TO CNT-ERR.
+
+       SHOW-RESULT.
+           DISPLAY "==================================="
+           DISPLAY "RECORDS PROCESSED  : " CNT-TOTAL
+           DISPLAY "SUCCESS COUNT      : " CNT-OK
+           DISPLAY "FAILURE COUNT      : " CNT-ERR
+           DISPLAY "EMI TOTAL AMOUNT   : " SUM-EMI
+           DISPLAY "PENALTY TOTAL      : " SUM-PEN
+           DISPLAY "===================================".
+
+       CLOSE-FILES.
+           CLOSE INFILE
+                 ACCFILE.
